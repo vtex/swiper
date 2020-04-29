@@ -1,13 +1,13 @@
 /**
- * Swiper 4.5.0
+ * Swiper 4.5.2
  * Most modern mobile touch slider and framework with hardware accelerated transitions
  * http://www.idangero.us/swiper/
  *
- * Copyright 2014-2019 Vladimir Kharlampidi
+ * Copyright 2014-2020 Vladimir Kharlampidi
  *
  * Released under the MIT License
  *
- * Released on: February 22, 2019
+ * Released on: April 29, 2020
  */
 
 (function (global, factory) {
@@ -846,7 +846,7 @@
   };
 
   Object.keys(Methods).forEach(function (methodName) {
-    $.fn[methodName] = Methods[methodName];
+    $.fn[methodName] = $.fn[methodName] || Methods[methodName];
   });
 
   var Utils = {
@@ -1784,7 +1784,9 @@
     if (previousRealIndex !== realIndex) {
       swiper.emit('realIndexChange');
     }
-    swiper.emit('slideChange');
+    if (swiper.initialized || swiper.runCallbacksOnInit) {
+      swiper.emit('slideChange');
+    }
   }
 
   function updateClickedSlide (e) {
@@ -3199,6 +3201,7 @@
       if (params.autoHeight) {
         swiper.updateAutoHeight();
       }
+
     } else {
       swiper.updateSlidesClasses();
       if ((params.slidesPerView === 'auto' || params.slidesPerView > 1) && swiper.isEnd && !swiper.params.centeredSlides) {
@@ -3206,6 +3209,9 @@
       } else {
         swiper.slideTo(swiper.activeIndex, 0, false, true);
       }
+    }
+    if (swiper.autoplay && swiper.autoplay.running && swiper.autoplay.paused) {
+      swiper.autoplay.run();
     }
     // Return locks after resize
     swiper.allowSlidePrev = allowSlidePrev;
@@ -3987,23 +3993,12 @@
         return swiper;
       }
 
-      if (currentDirection === 'vertical') {
-        swiper.$el
-          .removeClass(((swiper.params.containerModifierClass) + "vertical wp8-vertical"))
-          .addClass(("" + (swiper.params.containerModifierClass) + newDirection));
+      swiper.$el
+        .removeClass(("" + (swiper.params.containerModifierClass) + currentDirection + " wp8-" + currentDirection))
+        .addClass(("" + (swiper.params.containerModifierClass) + newDirection));
 
-        if ((Browser.isIE || Browser.isEdge) && (Support.pointerEvents || Support.prefixedPointerEvents)) {
-          swiper.$el.addClass(((swiper.params.containerModifierClass) + "wp8-" + newDirection));
-        }
-      }
-      if (currentDirection === 'horizontal') {
-        swiper.$el
-          .removeClass(((swiper.params.containerModifierClass) + "horizontal wp8-horizontal"))
-          .addClass(("" + (swiper.params.containerModifierClass) + newDirection));
-
-        if ((Browser.isIE || Browser.isEdge) && (Support.pointerEvents || Support.prefixedPointerEvents)) {
-          swiper.$el.addClass(((swiper.params.containerModifierClass) + "wp8-" + newDirection));
-        }
+      if ((Browser.isIE || Browser.isEdge) && (Support.pointerEvents || Support.prefixedPointerEvents)) {
+        swiper.$el.addClass(((swiper.params.containerModifierClass) + "wp8-" + newDirection));
       }
 
       swiper.params.direction = newDirection;
@@ -4569,10 +4564,10 @@
       if (e.originalEvent) { e = e.originalEvent; } // jquery fix
       var kc = e.keyCode || e.charCode;
       // Directions locks
-      if (!swiper.allowSlideNext && ((swiper.isHorizontal() && kc === 39) || (swiper.isVertical() && kc === 40))) {
+      if (!swiper.allowSlideNext && ((swiper.isHorizontal() && kc === 39) || (swiper.isVertical() && kc === 40) || kc === 34)) {
         return false;
       }
-      if (!swiper.allowSlidePrev && ((swiper.isHorizontal() && kc === 37) || (swiper.isVertical() && kc === 38))) {
+      if (!swiper.allowSlidePrev && ((swiper.isHorizontal() && kc === 37) || (swiper.isVertical() && kc === 38) || kc === 33)) {
         return false;
       }
       if (e.shiftKey || e.altKey || e.ctrlKey || e.metaKey) {
@@ -4581,7 +4576,7 @@
       if (doc.activeElement && doc.activeElement.nodeName && (doc.activeElement.nodeName.toLowerCase() === 'input' || doc.activeElement.nodeName.toLowerCase() === 'textarea')) {
         return undefined;
       }
-      if (swiper.params.keyboard.onlyInViewport && (kc === 37 || kc === 39 || kc === 38 || kc === 40)) {
+      if (swiper.params.keyboard.onlyInViewport && (kc === 33 || kc === 34 || kc === 37 || kc === 39 || kc === 38 || kc === 40)) {
         var inView = false;
         // Check that swiper should be inside of visible area of window
         if (swiper.$el.parents(("." + (swiper.params.slideClass))).length > 0 && swiper.$el.parents(("." + (swiper.params.slideActiveClass))).length === 0) {
@@ -4608,19 +4603,19 @@
         if (!inView) { return undefined; }
       }
       if (swiper.isHorizontal()) {
-        if (kc === 37 || kc === 39) {
+        if (kc === 33 || kc === 34 || kc === 37 || kc === 39) {
           if (e.preventDefault) { e.preventDefault(); }
           else { e.returnValue = false; }
         }
-        if ((kc === 39 && !rtl) || (kc === 37 && rtl)) { swiper.slideNext(); }
-        if ((kc === 37 && !rtl) || (kc === 39 && rtl)) { swiper.slidePrev(); }
+        if (((kc === 34 || kc === 39) && !rtl) || ((kc === 33 || kc === 37) && rtl)) { swiper.slideNext(); }
+        if (((kc === 33 || kc === 37) && !rtl) || ((kc === 34 || kc === 39) && rtl)) { swiper.slidePrev(); }
       } else {
-        if (kc === 38 || kc === 40) {
+        if (kc === 33 || kc === 34 || kc === 38 || kc === 40) {
           if (e.preventDefault) { e.preventDefault(); }
           else { e.returnValue = false; }
         }
-        if (kc === 40) { swiper.slideNext(); }
-        if (kc === 38) { swiper.slidePrev(); }
+        if (kc === 34 || kc === 40) { swiper.slideNext(); }
+        if (kc === 33 || kc === 38) { swiper.slidePrev(); }
       }
       swiper.emit('keyPress', kc);
       return undefined;
@@ -5105,46 +5100,85 @@
       var swiper = this;
       var rtl = swiper.rtl;
       var params = swiper.params.pagination;
-      if (!params.el || !swiper.pagination.el || !swiper.pagination.$el || swiper.pagination.$el.length === 0) { return; }
-      var slidesLength = swiper.virtual && swiper.params.virtual.enabled ? swiper.virtual.slides.length : swiper.slides.length;
+      if (
+        !params.el ||
+        !swiper.pagination.el ||
+        !swiper.pagination.$el ||
+        swiper.pagination.$el.length === 0
+      )
+        { return; }
+      var slidesLength =
+        swiper.virtual && swiper.params.virtual.enabled
+          ? swiper.virtual.slides.length
+          : swiper.slides.length;
       var $el = swiper.pagination.$el;
       // Current/Total
       var current;
-      var total = swiper.params.loop ? Math.ceil((slidesLength - (swiper.loopedSlides * 2)) / swiper.params.slidesPerGroup) : swiper.snapGrid.length;
+      var total = swiper.params.loop
+        ? Math.ceil(
+            (slidesLength - swiper.loopedSlides * 2) /
+              swiper.params.slidesPerGroup
+          )
+        : swiper.snapGrid.length;
       if (swiper.params.loop) {
-        current = Math.ceil((swiper.activeIndex - swiper.loopedSlides) / swiper.params.slidesPerGroup);
-        if (current > slidesLength - 1 - (swiper.loopedSlides * 2)) {
-          current -= (slidesLength - (swiper.loopedSlides * 2));
+        current = Math.ceil(
+          (swiper.activeIndex - swiper.loopedSlides) /
+            swiper.params.slidesPerGroup
+        );
+        if (current > slidesLength - 1 - swiper.loopedSlides * 2) {
+          current -= slidesLength - swiper.loopedSlides * 2;
         }
         if (current > total - 1) { current -= total; }
-        if (current < 0 && swiper.params.paginationType !== 'bullets') { current = total + current; }
-      } else if (typeof swiper.snapIndex !== 'undefined') {
+        if (current < 0 && swiper.params.paginationType !== "bullets")
+          { current = total + current; }
+      } else if (typeof swiper.snapIndex !== "undefined") {
         current = swiper.snapIndex;
       } else {
         current = swiper.activeIndex || 0;
       }
       // Types
-      if (params.type === 'bullets' && swiper.pagination.bullets && swiper.pagination.bullets.length > 0) {
+      if (
+        params.type === "bullets" &&
+        swiper.pagination.bullets &&
+        swiper.pagination.bullets.length > 0
+      ) {
         var bullets = swiper.pagination.bullets;
         var firstIndex;
         var lastIndex;
         var midIndex;
         if (params.dynamicBullets) {
-          swiper.pagination.bulletSize = bullets.eq(0)[swiper.isHorizontal() ? 'outerWidth' : 'outerHeight'](true);
-          $el.css(swiper.isHorizontal() ? 'width' : 'height', ((swiper.pagination.bulletSize * (params.dynamicMainBullets + 4)) + "px"));
-          if (params.dynamicMainBullets > 1 && swiper.previousIndex !== undefined) {
-            swiper.pagination.dynamicBulletIndex += (current - swiper.previousIndex);
-            if (swiper.pagination.dynamicBulletIndex > (params.dynamicMainBullets - 1)) {
-              swiper.pagination.dynamicBulletIndex = params.dynamicMainBullets - 1;
+          swiper.pagination.bulletSize = bullets
+            .eq(0)
+            [swiper.isHorizontal() ? "outerWidth" : "outerHeight"](true);
+          $el.css(
+            swiper.isHorizontal() ? "width" : "height",
+            ((swiper.pagination.bulletSize * (params.dynamicMainBullets + 4)) + "px")
+          );
+          if (
+            params.dynamicMainBullets > 1 &&
+            swiper.previousIndex !== undefined
+          ) {
+            swiper.pagination.dynamicBulletIndex +=
+              current - swiper.previousIndex;
+            if (
+              swiper.pagination.dynamicBulletIndex >
+              params.dynamicMainBullets - 1
+            ) {
+              swiper.pagination.dynamicBulletIndex =
+                params.dynamicMainBullets - 1;
             } else if (swiper.pagination.dynamicBulletIndex < 0) {
               swiper.pagination.dynamicBulletIndex = 0;
             }
           }
           firstIndex = current - swiper.pagination.dynamicBulletIndex;
-          lastIndex = firstIndex + (Math.min(bullets.length, params.dynamicMainBullets) - 1);
+          lastIndex =
+            firstIndex +
+            (Math.min(bullets.length, params.dynamicMainBullets) - 1);
           midIndex = (lastIndex + firstIndex) / 2;
         }
-        bullets.removeClass(((params.bulletActiveClass) + " " + (params.bulletActiveClass) + "-next " + (params.bulletActiveClass) + "-next-next " + (params.bulletActiveClass) + "-prev " + (params.bulletActiveClass) + "-prev-prev " + (params.bulletActiveClass) + "-main"));
+        bullets.removeClass(
+          ((params.bulletActiveClass) + " " + (params.bulletActiveClass) + "-next " + (params.bulletActiveClass) + "-next-next " + (params.bulletActiveClass) + "-prev " + (params.bulletActiveClass) + "-prev-prev " + (params.bulletActiveClass) + "-main")
+        );
         if ($el.length > 1) {
           bullets.each(function (index, bullet) {
             var $bullet = $(bullet);
@@ -5194,82 +5228,131 @@
           }
         }
         if (params.dynamicBullets) {
-          var dynamicBulletsLength = Math.min(bullets.length, params.dynamicMainBullets + 4);
-          var bulletsOffset = (((swiper.pagination.bulletSize * dynamicBulletsLength) - (swiper.pagination.bulletSize)) / 2) - (midIndex * swiper.pagination.bulletSize);
-          var offsetProp = rtl ? 'right' : 'left';
-          bullets.css(swiper.isHorizontal() ? offsetProp : 'top', (bulletsOffset + "px"));
+          var dynamicBulletsLength = Math.min(
+            bullets.length,
+            params.dynamicMainBullets + 4
+          );
+          var bulletsOffset =
+            (swiper.pagination.bulletSize * dynamicBulletsLength -
+              swiper.pagination.bulletSize) /
+              2 -
+            midIndex * swiper.pagination.bulletSize;
+          var offsetProp = rtl ? "right" : "left";
+          bullets.css(
+            swiper.isHorizontal() ? offsetProp : "top",
+            (bulletsOffset + "px")
+          );
         }
       }
-      if (params.type === 'fraction') {
-        $el.find(("." + (params.currentClass))).text(params.formatFractionCurrent(current + 1));
+      if (params.type === "fraction") {
+        $el
+          .find(("." + (params.currentClass)))
+          .text(params.formatFractionCurrent(current + 1));
         $el.find(("." + (params.totalClass))).text(params.formatFractionTotal(total));
       }
-      if (params.type === 'progressbar') {
+      if (params.type === "progressbar") {
         var progressbarDirection;
         if (params.progressbarOpposite) {
-          progressbarDirection = swiper.isHorizontal() ? 'vertical' : 'horizontal';
+          progressbarDirection = swiper.isHorizontal()
+            ? "vertical"
+            : "horizontal";
         } else {
-          progressbarDirection = swiper.isHorizontal() ? 'horizontal' : 'vertical';
+          progressbarDirection = swiper.isHorizontal()
+            ? "horizontal"
+            : "vertical";
         }
         var scale = (current + 1) / total;
         var scaleX = 1;
         var scaleY = 1;
-        if (progressbarDirection === 'horizontal') {
+        if (progressbarDirection === "horizontal") {
           scaleX = scale;
         } else {
           scaleY = scale;
         }
-        $el.find(("." + (params.progressbarFillClass))).transform(("translate3d(0,0,0) scaleX(" + scaleX + ") scaleY(" + scaleY + ")")).transition(swiper.params.speed);
+        $el
+          .find(("." + (params.progressbarFillClass)))
+          .transform(("translate3d(0,0,0) scaleX(" + scaleX + ") scaleY(" + scaleY + ")"))
+          .transition(swiper.params.speed);
       }
-      if (params.type === 'custom' && params.renderCustom) {
+      if (params.type === "custom" && params.renderCustom) {
         $el.html(params.renderCustom(swiper, current + 1, total));
-        swiper.emit('paginationRender', swiper, $el[0]);
+        swiper.emit("paginationRender", swiper, $el[0]);
       } else {
-        swiper.emit('paginationUpdate', swiper, $el[0]);
+        swiper.emit("paginationUpdate", swiper, $el[0]);
       }
-      $el[swiper.params.watchOverflow && swiper.isLocked ? 'addClass' : 'removeClass'](params.lockClass);
+      $el[
+        swiper.params.watchOverflow && swiper.isLocked
+          ? "addClass"
+          : "removeClass"
+      ](params.lockClass);
     },
     render: function render() {
       // Render Container
       var swiper = this;
       var params = swiper.params.pagination;
-      if (!params.el || !swiper.pagination.el || !swiper.pagination.$el || swiper.pagination.$el.length === 0) { return; }
-      var slidesLength = swiper.virtual && swiper.params.virtual.enabled ? swiper.virtual.slides.length : swiper.slides.length;
+      if (
+        !params.el ||
+        !swiper.pagination.el ||
+        !swiper.pagination.$el ||
+        swiper.pagination.$el.length === 0
+      )
+        { return; }
+      var slidesLength =
+        swiper.virtual && swiper.params.virtual.enabled
+          ? swiper.virtual.slides.length
+          : swiper.slides.length;
 
       var $el = swiper.pagination.$el;
-      var paginationHTML = '';
-      if (params.type === 'bullets') {
-        var numberOfBullets = swiper.params.loop ? Math.ceil((slidesLength - (swiper.loopedSlides * 2)) / swiper.params.slidesPerGroup) : swiper.snapGrid.length;
+      var paginationHTML = "";
+      if (params.type === "bullets") {
+        var numberOfBullets = swiper.params.loop
+          ? Math.ceil(
+              (slidesLength - swiper.loopedSlides * 2) /
+                swiper.params.slidesPerGroup
+            )
+          : swiper.snapGrid.length;
         for (var i = 0; i < numberOfBullets; i += 1) {
           if (params.renderBullet) {
-            paginationHTML += params.renderBullet.call(swiper, i, params.bulletClass);
+            paginationHTML += params.renderBullet.call(
+              swiper,
+              i,
+              params.bulletClass
+            );
           } else {
             paginationHTML += "<" + (params.bulletElement) + " class=\"" + (params.bulletClass) + "\"></" + (params.bulletElement) + ">";
           }
         }
         $el.html(paginationHTML);
-        swiper.pagination.bullets = $el.find(("." + (params.bulletClass)));
+        swiper.pagination.bullets = $el.find(("" + (params.bulletSelector)));
       }
-      if (params.type === 'fraction') {
+      if (params.type === "fraction") {
         if (params.renderFraction) {
-          paginationHTML = params.renderFraction.call(swiper, params.currentClass, params.totalClass);
+          paginationHTML = params.renderFraction.call(
+            swiper,
+            params.currentClass,
+            params.totalClass
+          );
         } else {
-          paginationHTML = "<span class=\"" + (params.currentClass) + "\"></span>"
-          + ' / '
-          + "<span class=\"" + (params.totalClass) + "\"></span>";
+          paginationHTML =
+            "<span class=\"" + (params.currentClass) + "\"></span>" +
+            " / " +
+            "<span class=\"" + (params.totalClass) + "\"></span>";
         }
         $el.html(paginationHTML);
       }
-      if (params.type === 'progressbar') {
+      if (params.type === "progressbar") {
         if (params.renderProgressbar) {
-          paginationHTML = params.renderProgressbar.call(swiper, params.progressbarFillClass);
+          paginationHTML = params.renderProgressbar.call(
+            swiper,
+            params.progressbarFillClass
+          );
         } else {
           paginationHTML = "<span class=\"" + (params.progressbarFillClass) + "\"></span>";
         }
         $el.html(paginationHTML);
       }
-      if (params.type !== 'custom') {
-        swiper.emit('paginationRender', swiper.pagination.$el[0]);
+      if (params.type !== "custom") {
+        swiper.emit("paginationRender", swiper.pagination.$el[0]);
       }
     },
     init: function init() {
@@ -5281,33 +5364,33 @@
       if ($el.length === 0) { return; }
 
       if (
-        swiper.params.uniqueNavElements
-        && typeof params.el === 'string'
-        && $el.length > 1
-        && swiper.$el.find(params.el).length === 1
+        swiper.params.uniqueNavElements &&
+        typeof params.el === "string" &&
+        $el.length > 1 &&
+        swiper.$el.find(params.el).length === 1
       ) {
         $el = swiper.$el.find(params.el);
       }
 
-      if (params.type === 'bullets' && params.clickable) {
+      if (params.type === "bullets" && params.clickable) {
         $el.addClass(params.clickableClass);
       }
 
       $el.addClass(params.modifierClass + params.type);
 
-      if (params.type === 'bullets' && params.dynamicBullets) {
+      if (params.type === "bullets" && params.dynamicBullets) {
         $el.addClass(("" + (params.modifierClass) + (params.type) + "-dynamic"));
         swiper.pagination.dynamicBulletIndex = 0;
         if (params.dynamicMainBullets < 1) {
           params.dynamicMainBullets = 1;
         }
       }
-      if (params.type === 'progressbar' && params.progressbarOpposite) {
+      if (params.type === "progressbar" && params.progressbarOpposite) {
         $el.addClass(params.progressbarOppositeClass);
       }
 
       if (params.clickable) {
-        $el.on('click', ("." + (params.bulletClass)), function onClick(e) {
+        $el.on("click", ("" + (params.bulletSelector)), function onClick(e) {
           e.preventDefault();
           var index = $(this).index() * swiper.params.slidesPerGroup;
           if (swiper.params.loop) { index += swiper.loopedSlides; }
@@ -5323,24 +5406,31 @@
     destroy: function destroy() {
       var swiper = this;
       var params = swiper.params.pagination;
-      if (!params.el || !swiper.pagination.el || !swiper.pagination.$el || swiper.pagination.$el.length === 0) { return; }
+      if (
+        !params.el ||
+        !swiper.pagination.el ||
+        !swiper.pagination.$el ||
+        swiper.pagination.$el.length === 0
+      )
+        { return; }
       var $el = swiper.pagination.$el;
 
       $el.removeClass(params.hiddenClass);
       $el.removeClass(params.modifierClass + params.type);
-      if (swiper.pagination.bullets) { swiper.pagination.bullets.removeClass(params.bulletActiveClass); }
+      if (swiper.pagination.bullets)
+        { swiper.pagination.bullets.removeClass(params.bulletActiveClass); }
       if (params.clickable) {
-        $el.off('click', ("." + (params.bulletClass)));
+        $el.off("click", ("" + (params.bulletSelector)));
       }
     },
   };
 
   var Pagination$1 = {
-    name: 'pagination',
+    name: "pagination",
     params: {
       pagination: {
         el: null,
-        bulletElement: 'span',
+        bulletElement: "span",
         clickable: false,
         hideOnClick: false,
         renderBullet: null,
@@ -5348,21 +5438,22 @@
         renderFraction: null,
         renderCustom: null,
         progressbarOpposite: false,
-        type: 'bullets', // 'bullets' or 'progressbar' or 'fraction' or 'custom'
+        type: "bullets", // 'bullets' or 'progressbar' or 'fraction' or 'custom'
         dynamicBullets: false,
         dynamicMainBullets: 1,
         formatFractionCurrent: function (number) { return number; },
         formatFractionTotal: function (number) { return number; },
-        bulletClass: 'swiper-pagination-bullet',
-        bulletActiveClass: 'swiper-pagination-bullet-active',
-        modifierClass: 'swiper-pagination-', // NEW
-        currentClass: 'swiper-pagination-current',
-        totalClass: 'swiper-pagination-total',
-        hiddenClass: 'swiper-pagination-hidden',
-        progressbarFillClass: 'swiper-pagination-progressbar-fill',
-        progressbarOppositeClass: 'swiper-pagination-progressbar-opposite',
-        clickableClass: 'swiper-pagination-clickable', // NEW
-        lockClass: 'swiper-pagination-lock',
+        bulletClass: "swiper-pagination-bullet",
+        bulletSelector: ".swiper-pagination-bullet",
+        bulletActiveClass: "swiper-pagination-bullet-active",
+        modifierClass: "swiper-pagination-", // NEW
+        currentClass: "swiper-pagination-current",
+        totalClass: "swiper-pagination-total",
+        hiddenClass: "swiper-pagination-hidden",
+        progressbarFillClass: "swiper-pagination-progressbar-fill",
+        progressbarOppositeClass: "swiper-pagination-progressbar-opposite",
+        clickableClass: "swiper-pagination-clickable", // NEW
+        lockClass: "swiper-pagination-lock",
       },
     },
     create: function create() {
@@ -5388,7 +5479,7 @@
         var swiper = this;
         if (swiper.params.loop) {
           swiper.pagination.update();
-        } else if (typeof swiper.snapIndex === 'undefined') {
+        } else if (typeof swiper.snapIndex === "undefined") {
           swiper.pagination.update();
         }
       },
@@ -5419,16 +5510,18 @@
       click: function click(e) {
         var swiper = this;
         if (
-          swiper.params.pagination.el
-          && swiper.params.pagination.hideOnClick
-          && swiper.pagination.$el.length > 0
-          && !$(e.target).hasClass(swiper.params.pagination.bulletClass)
+          swiper.params.pagination.el &&
+          swiper.params.pagination.hideOnClick &&
+          swiper.pagination.$el.length > 0 &&
+          !$(e.target).is(swiper.params.pagination.bulletSelector)
         ) {
-          var isHidden = swiper.pagination.$el.hasClass(swiper.params.pagination.hiddenClass);
+          var isHidden = swiper.pagination.$el.hasClass(
+            swiper.params.pagination.hiddenClass
+          );
           if (isHidden === true) {
-            swiper.emit('paginationShow', swiper);
+            swiper.emit("paginationShow", swiper);
           } else {
-            swiper.emit('paginationHide', swiper);
+            swiper.emit("paginationHide", swiper);
           }
           swiper.pagination.$el.toggleClass(swiper.params.pagination.hiddenClass);
         }
@@ -7245,6 +7338,7 @@
       if ($activeSlideEl.attr('data-swiper-autoplay')) {
         delay = $activeSlideEl.attr('data-swiper-autoplay') || swiper.params.autoplay.delay;
       }
+      clearTimeout(swiper.autoplay.timeout);
       swiper.autoplay.timeout = Utils.nextTick(function () {
         if (swiper.params.autoplay.reverseDirection) {
           if (swiper.params.loop) {
@@ -7983,7 +8077,7 @@
         } else {
           newThumbsIndex = swiper.realIndex;
         }
-        if (thumbsSwiper.visibleSlidesIndexes.indexOf(newThumbsIndex) < 0) {
+        if (thumbsSwiper.visibleSlidesIndexes && thumbsSwiper.visibleSlidesIndexes.indexOf(newThumbsIndex) < 0) {
           if (thumbsSwiper.params.centeredSlides) {
             if (newThumbsIndex > currentThumbsIndex) {
               newThumbsIndex = newThumbsIndex - Math.floor(slidesPerView / 2) + 1;
